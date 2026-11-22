@@ -1,0 +1,1 @@
+{"scope": ["shop/**", "tests/**"], "note": "Synthetic session for the offline demo; see scripts/make_fixture.py."}

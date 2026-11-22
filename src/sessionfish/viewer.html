@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sessionfish review</title>
+<style>
+:root {
+  --bg: #f4f2ee; --panel: #ffffff; --ink: #1d1c1a; --muted: #6d6a64; --line: #dedad2;
+  --white-side: #f7f6f2; --black-side: #36332e; --accent: #3d7a4f;
+  --blunder: #d23b3b; --mistake: #e08a00; --inaccuracy: #3b8fd2; --good: #3d7a4f;
+  --add: #e3f4e6; --add-ink: #1f6b33; --del: #fbe4e4; --del-ink: #a32626; --code: #f1efe9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1a18; --panel: #262421; --ink: #ece9e2; --muted: #9a958b; --line: #3a3732;
+    --white-side: #e8e5de; --black-side: #403c36; --accent: #6fbf86;
+    --add: #1e3324; --add-ink: #8fd6a3; --del: #3a2020; --del-ink: #f19c9c; --code: #201f1c;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1a18; --panel: #262421; --ink: #ece9e2; --muted: #9a958b; --line: #3a3732;
+  --white-side: #e8e5de; --black-side: #403c36; --accent: #6fbf86;
+  --add: #1e3324; --add-ink: #8fd6a3; --del: #3a2020; --del-ink: #f19c9c; --code: #201f1c;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+code, pre, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; }
+header { padding: 18px 24px 10px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; }
+header h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
+header h1 span { color: var(--muted); font-weight: 500; }
+.task { color: var(--muted); max-width: 70ch; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 24px 14px; }
+.chip { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 12.5px; }
+.chip b { font-variant-numeric: tabular-nums; }
+.g-blunder { color: var(--blunder); } .g-mistake { color: var(--mistake); } .g-inaccuracy { color: var(--inaccuracy); }
+main { display: grid; grid-template-columns: 34px minmax(0, 1fr) 320px; gap: 14px; padding: 0 24px 24px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+#bar { position: relative; border-radius: 6px; overflow: hidden; background: var(--black-side); min-height: 420px; border: 1px solid var(--line); }
+#bar .white { position: absolute; inset: 0; background: var(--white-side); transform-origin: bottom; transition: transform .35s ease; }
+#bar .num { position: absolute; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+#board { padding: 16px 18px; min-height: 420px; }
+#board h2 { margin: 0 0 4px; font-size: 16px; display: flex; gap: 10px; align-items: baseline; }
+#board .glyph { font-size: 20px; font-weight: 800; }
+.meta { color: var(--muted); font-size: 12.5px; margin-bottom: 12px; }
+.comps { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin: 10px 0 14px; }
+.comp { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12px; }
+.comp b { display: block; font-size: 14px; font-variant-numeric: tabular-nums; }
+.comp.neg b { color: var(--blunder); } .comp.pos b { color: var(--good); }
+pre.diff { background: var(--code); border-radius: 8px; padding: 10px 0; overflow: auto; max-height: 340px; margin: 0; }
+pre.diff div { padding: 0 12px; white-space: pre; }
+pre.diff .a { background: var(--add); color: var(--add-ink); } pre.diff .d { background: var(--del); color: var(--del-ink); }
+pre.diff .h { color: var(--muted); }
+.note { background: var(--code); border-radius: 8px; padding: 8px 10px; color: var(--muted); }
+#moves { padding: 6px; max-height: 560px; overflow: auto; }
+.mv { display: grid; grid-template-columns: 30px 1fr auto 46px; gap: 6px; align-items: center; padding: 5px 8px; border-radius: 6px; cursor: pointer; }
+.mv:hover { background: var(--code); } .mv.on { background: var(--accent); color: #fff; }
+.mv.on .ev, .mv.on .n { color: #fff; }
+.mv .n { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.mv .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mv .ev { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12.5px; }
+.mv .gl { font-weight: 800; }
+.mv.unrep .lbl { opacity: .55; font-style: italic; }
+#chart { grid-column: 2 / 4; padding: 10px 12px 6px; }
+#chart svg { width: 100%; height: 150px; display: block; cursor: pointer; }
+.section-title { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 8px; }
+.lines { display: grid; gap: 8px; }
+.ln { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.ln.best { border-color: var(--good); background: color-mix(in srgb, var(--good) 7%, var(--panel)); }
+.ln.fail { opacity: .8; border-color: color-mix(in srgb, var(--blunder) 55%, var(--line)); border-style: dashed; }
+.ln .hd { display: flex; justify-content: space-between; gap: 10px; font-weight: 600; }
+.ln ol { margin: 6px 0 0; padding-left: 20px; } .ln li { margin: 2px 0; }
+.ln .err { color: var(--blunder); font-size: 12.5px; }
+.rule { border: 1px dashed var(--accent); border-radius: 8px; padding: 10px; margin-top: 8px; }
+.badge { display: inline-block; border-radius: 4px; padding: 0 6px; font-size: 11.5px; font-weight: 700; color: #fff; background: var(--muted); }
+.badge.verified { background: var(--good); } .badge.failed, .badge.timeout, .badge.error { background: var(--blunder); }
+.keys { color: var(--muted); font-size: 12px; padding: 0 24px 24px; }
+footer { color: var(--muted); font-size: 12px; padding: 0 24px 24px; }
+@media (max-width: 860px) {
+  main { grid-template-columns: 24px minmax(0, 1fr); padding: 0 16px 16px; }
+  #side { grid-column: 1 / 3; } #chart { grid-column: 1 / 3; }
+  header, .chips, .keys, footer { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>sessionfish <span id="sid"></span></h1>
+  <div class="task" id="task"></div>
+</header>
+<div class="chips" id="chips"></div>
+<main>
+  <div id="bar" aria-label="Eval bar"><div class="white"></div><div class="num"></div></div>
+  <section class="panel" id="board" aria-live="polite"></section>
+  <aside class="panel" id="side"><div id="moves" role="listbox" aria-label="Moves"></div></aside>
+  <section class="panel" id="chart" aria-label="Eval across the session"></section>
+</main>
+<div class="keys">← → step through plies · click the chart to jump · link to a ply with <code>#ply=6</code></div>
+<footer id="foot"></footer>
+<script id="data" type="application/json">/*__DATA__*/</script>
+<script>
+const R = JSON.parse(document.getElementById("data").textContent);
+const rec = R.record;
+const byPly = Object.fromEntries((R.analysis || []).map(a => [a.ply, a]));
+const SEV = { blunder: "var(--blunder)", mistake: "var(--mistake)", inaccuracy: "var(--inaccuracy)" };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ev = s => (s >= 0 ? "+" : "") + (s / 100).toFixed(2);
+const label = m => !m ? "?" : m.tool === "Bash" ? "Bash " + m.command : m.tool + " " + m.file_path;
+let cur = 0;
+
+document.getElementById("sid").textContent = R.session.id;
+document.getElementById("task").textContent = "“" + R.session.task + "”";
+const S = R.summary;
+document.getElementById("chips").innerHTML = [
+  `<span class="chip"><b>${R.session.plies}</b> plies</span>`,
+  `<span class="chip g-blunder"><b>${S.blunder}</b> ?? blunder</span>`,
+  `<span class="chip g-mistake"><b>${S.mistake}</b> ? mistake</span>`,
+  `<span class="chip g-inaccuracy"><b>${S.inaccuracy}</b> ?! inaccuracy</span>`,
+  `<span class="chip"><b>${S.unreplayable}</b> unreplayable</span>`,
+  `<span class="chip">accuracy <b>${R.accuracy}%</b></span>`,
+  `<span class="chip">base <b class="mono">${esc(R.base.sha.slice(0, 10))}</b>${R.base.dirty ? " + dirty patch" : ""}</span>`,
+  `<span class="chip">${R.positions.distinct} positions measured, ${R.positions.plies + 1 - R.positions.distinct} cache hits</span>`,
+].join("");
+document.getElementById("foot").innerHTML =
+  `Generated by sessionfish ${esc(R.sessionfish)} · analysis model <code>${esc(R.model)}</code> · classification is code: ` +
+  `?! ≥ ${R.thresholds.inaccuracy}, ? ≥ ${R.thresholds.mistake}, ?? ≥ ${R.thresholds.blunder} sustained win-chance drop over ${R.thresholds.recovery_window} plies.`;
+
+// move list
+const moves = document.getElementById("moves");
+moves.innerHTML = rec.map(r => `
+  <div class="mv${r.status === "unreplayable" ? " unrep" : ""}" data-ply="${r.ply}" role="option">
+    <span class="n">${r.ply}</span>
+    <span class="lbl" title="${esc(r.label)}">${r.ply === 0 ? "start position" : esc(r.label)}</span>
+    <span class="gl" style="color:${SEV[r.severity] || "inherit"}">${esc(r.glyph)}</span>
+    <span class="ev">${ev(r.score)}</span>
+  </div>`).join("");
+moves.addEventListener("click", e => { const el = e.target.closest(".mv"); if (el) go(+el.dataset.ply); });
+
+// advantage chart
+function chart() {
+  const W = 1000, H = 150, pad = 8, n = rec.length - 1 || 1;
+  const x = i => pad + (W - 2 * pad) * i / n, y = wc => H / 2 - (H / 2 - pad) * wc;
+  const pts = rec.map((r, i) => `${x(i).toFixed(1)},${y(r.wc).toFixed(1)}`);
+  const area = `M${x(0)},${H / 2} L${pts.join(" L")} L${x(n)},${H / 2} Z`;
+  const marks = rec.filter(r => r.severity).map(r =>
+    `<circle cx="${x(r.ply)}" cy="${y(r.wc)}" r="6" fill="${SEV[r.severity]}" stroke="var(--panel)" stroke-width="2"><title>ply ${r.ply} ${r.glyph}</title></circle>`).join("");
+  document.getElementById("chart").innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Win chance per ply">
+      <rect x="0" y="0" width="${W}" height="${H / 2}" fill="var(--white-side)" opacity=".55"/>
+      <rect x="0" y="${H / 2}" width="${W}" height="${H / 2}" fill="var(--black-side)" opacity=".25"/>
+      <clipPath id="up"><rect x="0" y="0" width="${W}" height="${H / 2}"/></clipPath>
+      <clipPath id="dn"><rect x="0" y="${H / 2}" width="${W}" height="${H / 2}"/></clipPath>
+      <path d="${area}" fill="var(--good)" opacity=".35" clip-path="url(#up)"/>
+      <path d="${area}" fill="var(--blunder)" opacity=".35" clip-path="url(#dn)"/>
+      <polyline points="${pts.join(" ")}" fill="none" stroke="var(--ink)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+      <line x1="0" x2="${W}" y1="${H / 2}" y2="${H / 2}" stroke="var(--muted)" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>
+      <line id="cursor" x1="0" x2="0" y1="0" y2="${H}" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+      ${marks}
+    </svg>`;
+  const svg = document.querySelector("#chart svg");
+  svg.addEventListener("click", e => {
+    const b = svg.getBoundingClientRect();
+    go(Math.round(((e.clientX - b.left) / b.width * W - pad) / (W - 2 * pad) * n));
+  });
+  return x;
+}
+const cx = chart();
+
+function diffHtml(d) {
+  if (!d) return "";
+  return `<pre class="diff">${d.split("\n").filter(l => !l.startsWith("index ")).map(l => {
+    const c = l.startsWith("+++") || l.startsWith("---") || l.startsWith("diff ") || l.startsWith("@@") ? "h"
+      : l.startsWith("+") ? "a" : l.startsWith("-") ? "d" : "";
+    return `<div class="${c}">${esc(l) || " "}</div>`;
+  }).join("")}</pre>`;
+}
+
+function linesHtml(a) {
+  if (!a) return "";
+  let h = `<div class="section-title">Analysis · forked from ply ${a.ply - 1}</div>`;
+  if (a.proposal_error) h += `<div class="note">Model error: ${esc(a.proposal_error)}</div>`;
+  if (!a.results.length) h += `<div class="note">No alternative lines were proposed.</div>`;
+  const best = a.best && a.best.n;
+  h += `<div class="lines">` + a.results.map(r => {
+    const ok = r.status === "ok";
+    const cls = ok ? (r.n === best ? " best" : "") : " fail";
+    const tag = ok ? `${ev(r.final_score)}${r.n === best ? " · best" : ""}` : `<span class="badge failed">${esc(r.status)}</span>`;
+    const steps = ok ? r.plies.map(p => `<li><code>${esc(p.label)}</code> <span class="mono">${ev(p.score)}</span> ${p.glyph ? `<b>${esc(p.glyph)}</b>` : ""}</li>`).join("")
+      : r.moves.map(m => `<li><code>${esc(label(m))}</code></li>`).join("");
+    return `<div class="ln${cls}"><div class="hd"><span>Line ${r.n}: ${esc(r.idea)}</span><span class="mono">${tag}</span></div>
+      <ol start="${a.ply}">${steps}</ol>${ok ? "" : `<div class="err">${esc(r.error)}</div>`}</div>`;
+  }).join("") + `</div>`;
+  if (a.best) h += `<p class="meta">Best line ends at win chance ${a.best.final_wc.toFixed(2)} vs ${a.best.played_wc.toFixed(2)} in the game: ${a.best.better ? "<b>a better move existed</b>" : "no clear improvement"}.</p>`;
+  if (a.puzzle) h += `<div class="section-title">Puzzle</div><div class="note mono">${esc(a.puzzle.id)} · base ${esc(a.puzzle.base_sha.slice(0, 12))} + transcript prefix → tree ${esc(a.puzzle.tree_before.slice(0, 12))} · eval ${ev(a.puzzle.eval_before.score)}</div>`;
+  if (a.rule) {
+    const d = a.decision || {}, c = a.rule_check;
+    h += `<div class="rule"><div class="section-title" style="margin-top:0">Proposed CLAUDE.md rule · ${d.accept ? "accepted" : "not accepted"}</div>
+      <div>${esc(d.rule || a.rule.rule)}</div>`;
+    if (c) {
+      h += `<p class="meta" style="margin:8px 0 0">Replayed only this position: <span class="badge ${esc(c.verdict)}">${esc(c.verdict)}</span></p>`;
+      for (const [k, name] of [["with_rule", "with the rule"], ["control", "without it"]]) {
+        if (c[k]) h += `<div class="meta">${name}: ${c[k].moves.map(m => `<code>${esc(label(m))}</code>`).join(" → ")} · ${c[k].blunders} blunder(s)</div>`;
+      }
+    }
+    h += `</div>`;
+  }
+  return h;
+}
+
+function go(p) {
+  cur = Math.max(0, Math.min(rec.length - 1, p));
+  const r = rec[cur];
+  const pct = 50 + 50 * r.wc;
+  const bar = document.querySelector("#bar .white");
+  bar.style.transform = `scaleY(${pct / 100})`;
+  const num = document.querySelector("#bar .num");
+  num.textContent = (r.score / 100).toFixed(1);
+  num.style.cssText = r.wc >= 0 ? "bottom:6px;color:var(--black-side)" : "top:6px;color:var(--white-side)";
+  document.querySelectorAll(".mv").forEach(el => el.classList.toggle("on", +el.dataset.ply === cur));
+  document.querySelector(`.mv[data-ply="${cur}"]`)?.scrollIntoView({ block: "nearest" });
+  document.getElementById("cursor").setAttribute("x1", cx(cur));
+  document.getElementById("cursor").setAttribute("x2", cx(cur));
+  const comps = r.position.components.filter(c => c.value || c.items.length).map(c =>
+    `<div class="comp ${c.value < 0 ? "neg" : c.value > 0 ? "pos" : ""}" title="${esc(c.items.join("\n"))}">${esc(c.name.replace(/_/g, " "))}<b>${c.value >= 0 ? "+" : ""}${c.value}</b>${c.items.length ? `<span class="mono">${c.items.length} item(s)</span>` : ""}</div>`).join("");
+  const t = r.position.tests;
+  const head = cur === 0 ? `<h2>Start position</h2>` :
+    `<h2><span class="glyph" style="color:${SEV[r.severity] || "inherit"}">${esc(r.glyph)}</span><span>${r.ply}. ${esc(r.label)}</span></h2>`;
+  const sevText = r.severity ? `${r.severity}${r.motif ? " · " + r.motif : ""} · sustained drop ${r.sustained_drop.toFixed(2)}` : r.recovered ? "dipped but recovered inside the window" : "";
+  const tokenComp = r.tokens ? `<div class="comp neg">tokens so far<b>${Math.round(r.score - r.position.cp)}</b><span class="mono">${r.tokens.toLocaleString()} tokens</span></div>` : "";
+  let body = `${head}<div class="meta">${esc(r.status)} · ${esc(r.detail)} · tests ${t.passed}/${t.total} passing · eval ${ev(r.score)}${sevText ? " · " + esc(sevText) : ""}</div>
+    <div class="comps">${comps}${tokenComp}</div>`;
+  if (r.move && r.move.tool === "Bash") body += `<pre class="diff"><div class="h">$ ${esc(r.move.command)}</div></pre>`;
+  if (r.status === "unreplayable") body += `<div class="note">Not replayed. Later evals assume this ply changed no files.</div>`;
+  body += diffHtml(r.diff);
+  body += linesHtml(byPly[cur]);
+  document.getElementById("board").innerHTML = body;
+  history.replaceState(null, "", "#ply=" + cur);
+}
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") { go(cur + 1); e.preventDefault(); }
+  if (e.key === "ArrowLeft" || e.key === "ArrowUp") { go(cur - 1); e.preventDefault(); }
+});
+const m = location.hash.match(/ply=(\d+)/);
+go(m ? +m[1] : 0);
+</script>
+</body>
+</html>

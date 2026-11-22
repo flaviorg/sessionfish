@@ -1,0 +1,53 @@
+%% GAME graph
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	prepare(prepare)
+	apply_move(apply_move)
+	eval_position(eval_position)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> prepare;
+	apply_move --> eval_position;
+	eval_position -.-> __end__;
+	eval_position -.-> apply_move;
+	prepare --> eval_position;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
+
+%% ANALYSIS graph
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__(<p>__start__</p>)
+	propose_alternatives(propose_alternatives)
+	__error_handler__play_line(__error_handler__play_line)
+	play_line(play_line)
+	pick_best(pick_best<hr/><small><em>defer = True</em></small>)
+	freeze_puzzle(freeze_puzzle)
+	propose_rule(propose_rule)
+	review_rule(review_rule)
+	__error_handler__verify_rule(__error_handler__verify_rule)
+	verify_rule(verify_rule)
+	__end__(<p>__end__</p>)
+	__start__ --> propose_alternatives;
+	freeze_puzzle --> propose_rule;
+	pick_best -.-> __end__;
+	pick_best -.-> freeze_puzzle;
+	play_line --> pick_best;
+	propose_alternatives -.-> pick_best;
+	propose_alternatives -.-> play_line;
+	propose_rule --> review_rule;
+	review_rule -.-> __end__;
+	review_rule -.-> verify_rule;
+	verify_rule --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

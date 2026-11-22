@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+.env
+# scratch clones, reviews, puzzles and checkpoints from local runs
+.sessionfish/
+# tool artifacts that never belong in the repo
+.claude/
+docs/superpowers/
+docs/plans/
+docs/specs/
+*.scratch.*
+.DS_Store
+.impeccable/
